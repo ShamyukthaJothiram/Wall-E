@@ -1,17 +1,18 @@
+#imports
 import numpy as np
 import cv2
 
 def preprocess(image):
-    gray = cv2.cvtColor(image,cv2.COLOR_BGR2GRAY)
-    blur = cv2.GaussianBlur(gray,(7,7),0)
-    canny = cv2.Canny(blur,10,150)
-    # cv2.imshow("canny",canny)
+    gray = cv2.cvtColor(image,cv2.COLOR_BGR2GRAY)            # RGB to grayscale conversion
+    blur = cv2.GaussianBlur(gray,(7,7),0)                    # Apply Gaussian blur to reduce noise
+    canny = cv2.Canny(blur,10,150)                           # Apply Canny Edge Deetection
+    # cv2.imshow("canny",canny)                     
     return canny
 
-def region(image):
+def region(image):                                           # Find the Region of Interest(ROI) in the image
     height, width = image.shape[0:2]
     triangle = np.array([
-        [(0, height), (0.35*width, 0.4*height),(width*0.55, height*0.4), (width, height)],
+        [(0, height), (0.35*width, 0.4*height),(width*0.55, height*0.4), (width, height)], #parameters can be varied accordingly
     ],dtype=np.int32)
 
     mask = np.zeros_like(image)
@@ -20,15 +21,15 @@ def region(image):
     # cv2.imshow("region",mask)
     return mask
 
-def lines(copy,image):
+def lines(copy,image):                                        # Apply Hough Transform to obtain all straight lines from the image
     line = cv2.HoughLinesP(image, 2, np.pi / 180, 200, np.array([]), minLineLength=40, maxLineGap=5)
-    avg = average(copy,line)
-    black_lines=display_lines(copy,line)
+    avg = average(copy,line)                                  # Obtain the average of lines on both left and right
+    black_lines=display_lines(copy,line)                      
     lanes = cv2.addWeighted(copy, 0.8, black_lines, 1, 1)
     # cv2.imshow("lines",lanes)
     return lanes
 
-def average(image, lines):
+def average(image, lines):                                    # Function to obtain average
     left = []
     right = []
     for line in lines:
@@ -69,12 +70,12 @@ def display_lines(image, lines):
        line1 = [(x1, y1), (x2, y2)]  # First line
        line2 = [(x3, y3), (x4, y4)]  # Second line
 
-       # Combine the endpoints to form a polygon (you might need to adjust the order to prevent crossing)
+       # Combine the endpoints to form a polygon
        polygon_points = np.array([line1[0], line1[1], line2[1], line2[0]])
 
        overlay = image.copy()
 
-       # Draw filled polygon on overlay (e.g., red with 100/255 transparency)
+       # Draw filled polygon on overlay to produce a mask
        cv2.fillPoly(overlay, [polygon_points], color=(0, 0, 255))  # Red mask
 
        # Blend overlay with original image
@@ -83,6 +84,7 @@ def display_lines(image, lines):
        return highlighted
 
 
+#main code
 img = cv2.imread('lane4.jpg')
 img = cv2.resize(img,(640,480))
 cv2.imshow('image',img)
@@ -97,5 +99,6 @@ avg = average(copy, line)
 black = display_lines(copy, avg)
 cv2.imshow('lane', black)
 cv2.waitKey(0)
+
 
 
